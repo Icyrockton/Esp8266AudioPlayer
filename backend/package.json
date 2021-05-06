@@ -1,0 +1,26 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "dev": "ts-node-dev --respawn src/index.ts"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/express": "^4.17.11",
+    "@types/node": "^15.0.1",
+    "ts-node-dev": "^1.1.6"
+  },
+  "dependencies": {
+    "NeteaseCloudMusicApi": "^4.0.12",
+    "express": "^4.17.1",
+    "mqtt": "^4.2.6",
+    "mysql2": "^2.2.5",
+    "simple-netease-cloud-music": "^0.5.2",
+    "typescript": "^4.2.4"
+  }
+}
