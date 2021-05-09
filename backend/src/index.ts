@@ -121,6 +121,13 @@ app.get("/music/volume/:vol",((req, res) => {
     mqttESPClient.setVolume(parseInt(volume))
     res.send("ok")
 }))
+
+app.get("/music/hot",(req, res) => {
+    music.playlist("3778678").then(data => {
+        res.send(data["playlist"]["tracks"].slice(0,20))
+    })
+})
+
 app.listen(4000, () => {
     console.log('服务器启动中')
 })
