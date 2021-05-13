@@ -5,6 +5,13 @@
       <excludeFolder url="file://$MODULE_DIR$/temp" />
       <excludeFolder url="file://$MODULE_DIR$/.tmp" />
       <excludeFolder url="file://$MODULE_DIR$/tmp" />
+      <excludeFolder url="file://$MODULE_DIR$/android/.idea/libraries" />
+      <excludeFolder url="file://$MODULE_DIR$/android/.idea/modules" />
+      <excludeFolder url="file://$MODULE_DIR$/android/app/build" />
+      <excludeFolder url="file://$MODULE_DIR$/android/.gradle" />
+      <excludeFolder url="file://$MODULE_DIR$/firmware/.pio" />
+      <excludeFolder url="file://$MODULE_DIR$/firmware/cmake-build-debug" />
+      <excludeFolder url="file://$MODULE_DIR$/firmware/cmake-build-esp_wroom_02" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

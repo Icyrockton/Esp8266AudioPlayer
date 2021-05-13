@@ -50,25 +50,31 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.window.Popup
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.transform.CircleCropTransformation
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import org.koin.androidx.compose.getStateViewModel
 
 @ExperimentalMaterialApi
 @ExperimentalAnimationApi
 @ExperimentalComposeUiApi
 @Composable
 fun Music() {
-    val musicViewModel = getViewModel<MusicViewModel>()
+    val musicViewModel = getStateViewModel<MusicViewModel>()
     val searchSongList by musicViewModel.musicList.observeAsState()
     val searchState by musicViewModel.searchState.observeAsState()
     val playToolBarVisibility by musicViewModel.playToolBar.observeAsState()
     val playToolBarInfo by musicViewModel.playInfo.observeAsState()
     val playing by musicViewModel.playing.observeAsState()
-    LaunchedEffect(true) {
-        musicViewModel.hotMusic()
+    val coroutineScope  = rememberCoroutineScope()
+    LaunchedEffect(true){
+        coroutineScope.launch(Dispatchers.IO) {
+            musicViewModel.hotMusic()
+        }
     }
     DisposableEffect(true){
         onDispose {
@@ -109,7 +115,9 @@ fun Music() {
             ),
             maxLines = 1, singleLine = true,
             keyboardActions = KeyboardActions(onSearch = {
-                musicViewModel.searchMusic(searchString)
+                coroutineScope.launch(Dispatchers.IO) {
+                    musicViewModel.searchMusic(searchString)
+                }
 //                搜索音乐
                 keyboardController?.hide()
             })
@@ -164,7 +172,10 @@ fun Music() {
                     ) {
                         items(searchSongList!!, key = { it.id }) {
                             MusicItem(song = it) {
-                                musicViewModel.playMusic(it.id)
+                                coroutineScope.launch(Dispatchers.IO){
+                                    musicViewModel.playMusic(it.id)
+
+                                }
                             }
                         }
                     }
@@ -343,11 +354,14 @@ fun Music() {
                                 IconButton(
                                     onClick = {
                                         if (playing == null || playing == false) {
-                                            musicViewModel.musicResume()
+                                            coroutineScope.launch(Dispatchers.IO) {
+                                                musicViewModel.musicResume()
+                                            }
 
                                         } else {
-                                            musicViewModel.musicPause()
-
+                                            coroutineScope.launch(Dispatchers.IO) {
+                                                musicViewModel.musicPause()
+                                            }
                                         }
                                     },
                                     modifier = Modifier.size(40.dp)
@@ -368,7 +382,11 @@ fun Music() {
                                 }
                                 Spacer(modifier = Modifier.width(10.dp))
                                 IconButton(
-                                    onClick = { musicViewModel.musicCancel() },
+                                    onClick = {
+                                        coroutineScope.launch(Dispatchers.IO) {
+                                            musicViewModel.musicCancel()
+                                        }
+                                    },
                                     modifier = Modifier.size(30.dp)
                                 ) {
                                     Icon(

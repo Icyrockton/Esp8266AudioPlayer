@@ -74,6 +74,17 @@ interface ESPApiService {
     suspend fun carBackwardRight(): Response<Unit>
 
 
+
+    @GET("car/accelerate/2")
+    suspend fun carAccelerateX2(): Response<Unit>
+
+    @GET("car/accelerate/1")
+    suspend fun carAccelerate(): Response<Unit>
+
+    @GET("car/brake")
+    suspend fun carBrake(): Response<Unit>
+
+
 }
 
 

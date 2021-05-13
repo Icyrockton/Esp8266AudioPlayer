@@ -3,7 +3,7 @@ import {writeFile} from "fs";
 import {artist_album, banner, top_playlist, toplist_artist} from 'NeteaseCloudMusicApi'
 import NeteaseMusic from "simple-netease-cloud-music";
 import * as mqtt from "mqtt"
-import {MqttESPClient} from "./mqtt";
+import {CarDirection, MqttESPClient} from "./mqtt";
 import {Mysql} from "./mysql";
 
 const app = express();
@@ -90,43 +90,96 @@ app.get("/music/detail/:id", ((req, res) => {
         const song = data["songs"][0];
         const response = {
             id: song["id"],
-            name : song["name"],
-            artist : song["ar"][0]["name"],
-            cd:song["al"]["name"],
-            picUrl:song ["al"]["picUrl"]
+            name: song["name"],
+            artist: song["ar"][0]["name"],
+            cd: song["al"]["name"],
+            picUrl: song ["al"]["picUrl"]
         }
         res.send(response)
 
     })
 }))
 //暂停音乐
-app.get("/music/pause",((req, res) => {
+app.get("/music/pause", ((req, res) => {
     mqttESPClient.pauseMusic()
     res.send("ok")
 }))
 //取消音乐
-app.get("/music/cancel",((req, res) => {
+app.get("/music/cancel", ((req, res) => {
     mqttESPClient.cancelMusic()
     res.send("ok")
 }))
 //取消音乐
-app.get("/music/resume",((req, res) => {
+app.get("/music/resume", ((req, res) => {
     mqttESPClient.resumeMusic()
     res.send("ok")
 }))
 //设置音量
 //取消音乐
-app.get("/music/volume/:vol",((req, res) => {
+app.get("/music/volume/:vol", ((req, res) => {
     const volume = req.params.vol;
     mqttESPClient.setVolume(parseInt(volume))
     res.send("ok")
 }))
 
-app.get("/music/hot",(req, res) => {
+app.get("/music/hot", (req, res) => {
     music.playlist("3778678").then(data => {
-        res.send(data["playlist"]["tracks"].slice(0,20))
+        res.send(data["playlist"]["tracks"].slice(0, 20))
     })
 })
+
+
+app.get("/car/accelerate/:level",((req, res) => {
+    const level = req.params.level
+    mqttESPClient.carAccelerate(Number(level))
+    res.send("ok")
+}))
+
+app.get("/car/brake",((req, res) => {
+
+    mqttESPClient.carBrake()
+    res.send("ok")
+}))
+
+app.get("/car/:dir", ((req, res) => {
+    var dirParams = req.params.dir
+    var dir
+    switch (dirParams) {
+        case "forward":
+            dir = CarDirection.Forward
+            break
+        case "backward":
+            dir = CarDirection.Backward
+            break
+
+        case "left":
+            dir = CarDirection.Left
+            break
+
+        case "right":
+            dir = CarDirection.Right
+            break
+
+        case "forwardLeft":
+            dir = CarDirection.ForwardLeft
+            break
+
+        case "forwardRight":
+            dir = CarDirection.ForwardRight
+            break
+
+        case "backwardLeft":
+            dir = CarDirection.BackwardLeft
+            break
+
+        case "backwardRight":
+            dir = CarDirection.BackwardRight
+            break
+
+    }
+    mqttESPClient.car(dir)
+    res.send("ok")
+}))
 
 app.listen(4000, () => {
     console.log('服务器启动中')

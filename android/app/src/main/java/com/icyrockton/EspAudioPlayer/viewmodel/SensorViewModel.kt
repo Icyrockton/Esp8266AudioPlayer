@@ -21,31 +21,31 @@ class SensorViewModel : ViewModel() {
     val temperature: LiveData<List<TemperatureItem>> = _temperature
 
     //    最新的温度
-    val newestTemperature = _temperature.map { list: List<TemperatureItem>? -> list?.lastOrNull()?.temperature ?: 0.0 }
-    val newestHumidity = _humidity.map { list: List<HumidityItem>? -> list?.lastOrNull()?.humidity ?:0.0 }
+    val newestTemperature =
+        _temperature.map { list: List<TemperatureItem>? -> list?.lastOrNull()?.temperature ?: 0.0 }
+    val newestHumidity =
+        _humidity.map { list: List<HumidityItem>? -> list?.lastOrNull()?.humidity ?: 0.0 }
 
     private val _text = MutableLiveData<String>()
     val text: LiveData<String> = _text
 
-    fun resetSensorData(){
-        _humidity.value=emptyList()
+    fun resetSensorData() {
+        _humidity.value = emptyList()
         _temperature.value = emptyList()
 
-        Log.e("SensorViewModel", "resetSensorData: ", )
+        Log.e("SensorViewModel", "resetSensorData: ")
     }
 
     //    刷新数据
     suspend fun refreshSensorData() {
-        viewModelScope.launch {
-            _text.postValue("refreshSensorData: 刷新数据中...")
-            val humidity = api.getHumidityData().body()
-            val temperature = api.getTemperatureData().body()
-            if (humidity != null && temperature != null) {
-                this@SensorViewModel._humidity.postValue(humidity)
-                this@SensorViewModel._temperature.postValue(temperature)
-            }
-            _text.postValue("刷新完毕")
+        _text.postValue("refreshSensorData: 刷新数据中...")
+        val humidity = api.getHumidityData().body()
+        val temperature = api.getTemperatureData().body()
+        if (humidity != null && temperature != null) {
+            this@SensorViewModel._humidity.postValue(humidity)
+            this@SensorViewModel._temperature.postValue(temperature)
         }
+        _text.postValue("刷新完毕")
     }
 
 
