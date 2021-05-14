@@ -4,7 +4,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.icyrockton.EspAudioPlayer.network.ESPApiService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.java.KoinJavaComponent
 
 
@@ -45,7 +48,7 @@ class CarViewModel : ViewModel() {
 
     private var previousTime: Long = 0
 
-    suspend fun carGo(offsetX: Float, offsetY: Float) {
+    suspend fun carDirection(offsetX: Float, offsetY: Float) {
         if (System.currentTimeMillis() - previousTime > 500) {  //500ms触发一次
             previousTime = System.currentTimeMillis()
             val radian = Math.atan2(offsetX.toDouble(), offsetY.toDouble())
@@ -64,7 +67,7 @@ class CarViewModel : ViewModel() {
                 carBackward()
             } else if (degrees >= -67.5 && degrees < -22.5) {
                 carBackwardRight()
-            } else if (degrees < -157.5 || degrees > 157.5){
+            } else if (degrees < -157.5 || degrees > 157.5) {
                 carLeft()
             }
 
@@ -79,8 +82,35 @@ class CarViewModel : ViewModel() {
         api.carAccelerate()
     }
 
-    suspend fun carBrake() {
+    suspend fun carBrake() = withContext(Dispatchers.IO) {
         api.carBrake()
+    }
 
+
+    private var go = false
+
+    suspend fun carStarAccelerate() = withContext(Dispatchers.IO) {
+        launch {
+            go = true
+            while (go) {
+                api.carAccelerate()
+                Log.e("compose", "carStarAccelerate: 小车加速中X1")
+                delay(300L)
+            }
+        }
+    }
+
+    suspend fun carStarDecelerate() = withContext(Dispatchers.IO) {
+        go = false
+        api.carDecelerate()
+    }
+
+    suspend fun carStarAccelerateX2() = withContext(Dispatchers.IO) {
+        go = true
+        while (go) {
+            api.carAccelerateX2()
+            Log.e("compose", "carStarAccelerate: 小车加速中X2")
+            delay(300L)
+        }
     }
 }

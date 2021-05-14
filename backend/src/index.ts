@@ -135,6 +135,12 @@ app.get("/car/accelerate/:level",((req, res) => {
     res.send("ok")
 }))
 
+app.get("/car/decelerate",((req, res) => {
+
+    mqttESPClient.carDecelerate()
+    res.send("ok")
+}))
+
 app.get("/car/brake",((req, res) => {
 
     mqttESPClient.carBrake()

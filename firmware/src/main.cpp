@@ -68,6 +68,7 @@ const char *CarBackwardRightTopic = "car/backwardRight";
 const char *CarAccelerateTopic = "car/accelerate";
 const char *CarAccelerateX2Topic = "car/accelerateX2";
 const char *CarBrakeTopic = "car/brake";
+const char *CarDecelerateTopic = "car/decelerate";
 DynamicJsonDocument jsonParseDocument(512);
 char musicUrl[256]; //音乐地址
 
@@ -92,7 +93,21 @@ void stopMusicPlay() { //停止音乐的播放
 
 //小车
 
-int CAR_SPEED = 900; //1~1024
+double CAR_NORMAL_SPEED = 800.0; //1~1024
+bool doubleAccelerate = false;
+enum CarDirection {
+    forward,
+    forwardLeft,
+    forwardRight,
+    backward,
+    backwardLeft,
+    backwardRight,
+    right,
+    left,
+
+};
+
+CarDirection carDirection = forward;
 
 void setCarPin() {
 //    pinMode(CAR_ENA, OUTPUT);
@@ -107,54 +122,156 @@ void setCarPin() {
 
 void carGoForward() {  //小车前进
     Serial.println("forward...");
-
-    analogWrite(CAR_ENA, CAR_SPEED);
-
-    analogWrite(CAR_ENB, CAR_SPEED);
+    carDirection = forward;
 }
 
 
 void carGoBackward() {  //小车后退
     Serial.println("backward...");
-
-    analogWrite(CAR_ENA, CAR_SPEED);
-
-    analogWrite(CAR_ENB, CAR_SPEED);
+    carDirection = backward;
 }
 
 void carGoLeft() {
     Serial.println("left...");
-
-    analogWrite(CAR_ENA, CAR_SPEED);
-
-    analogWrite(CAR_ENB, CAR_SPEED);
+    carDirection = left;
 }
 
 void carGoRight() {
     Serial.println("right...");
-
-
-    analogWrite(CAR_ENA, CAR_SPEED);
-
-    analogWrite(CAR_ENB, CAR_SPEED);
+    carDirection = right;
 }
 
-void carAccelerate() {
-    Serial.println("forward...");
+void carGoForwardLeft() {
+    Serial.println("ForwardLeft...");
+    carDirection = forwardLeft;
+}
 
-    digitalWrite(CAR_IN_1, LOW);
-    digitalWrite(CAR_IN_2, HIGH);
-    digitalWrite(CAR_IN_3, LOW);
-    digitalWrite(CAR_IN_4, HIGH);
+void carGoForwardRight() {
+    Serial.println("ForwardRight...");
+    carDirection = forwardRight;
+}
+
+void carGoBackwardLeft() {
+    Serial.println("BackwardLeft...");
+    carDirection = backwardLeft;
+}
+
+void carGoBackwardRight() {
+    Serial.println("BackwardRight...");
+    carDirection = backwardRight;
+}
+
+double carCurrentSpeed = 0;
+bool carIsDecelerating =  false;  //是否在减速
+unsigned long carPreviousMillis = 0;
+
+
+void carAccelerate(double factor) {
+    Serial.println("forward...");
+    carIsDecelerating = false;
+    carCurrentSpeed = CAR_NORMAL_SPEED * factor;
+    switch (carDirection) {
+        case forward:
+            digitalWrite(CAR_IN_1, LOW);
+            digitalWrite(CAR_IN_2, HIGH);
+            analogWrite(CAR_ENA, carCurrentSpeed);
+            digitalWrite(CAR_IN_3, LOW);
+            digitalWrite(CAR_IN_4, HIGH);
+            analogWrite(CAR_ENB, carCurrentSpeed);
+            break;
+        case forwardLeft:
+            digitalWrite(CAR_IN_1, LOW);
+            digitalWrite(CAR_IN_2, HIGH);
+            analogWrite(CAR_ENA, carCurrentSpeed);
+            digitalWrite(CAR_IN_3, LOW);
+            digitalWrite(CAR_IN_4, HIGH);
+            analogWrite(CAR_ENB, 700);
+            break;
+
+        case forwardRight:
+            digitalWrite(CAR_IN_1, LOW);
+            digitalWrite(CAR_IN_2, HIGH);
+            analogWrite(CAR_ENA, 700);
+            digitalWrite(CAR_IN_3, LOW);
+            digitalWrite(CAR_IN_4, HIGH);
+            analogWrite(CAR_ENB, carCurrentSpeed);
+
+            break;
+        case backward:
+            digitalWrite(CAR_IN_1, HIGH);
+            digitalWrite(CAR_IN_2, LOW);
+            analogWrite(CAR_ENA, carCurrentSpeed);
+            digitalWrite(CAR_IN_3, HIGH);
+            digitalWrite(CAR_IN_4, LOW);
+            analogWrite(CAR_ENB, carCurrentSpeed);
+            break;
+        case backwardLeft:
+            digitalWrite(CAR_IN_1, HIGH);
+            digitalWrite(CAR_IN_2, LOW);
+            analogWrite(CAR_ENA, carCurrentSpeed);
+            digitalWrite(CAR_IN_3, HIGH);
+            digitalWrite(CAR_IN_4, LOW);
+            analogWrite(CAR_ENB, 700);
+            break;
+        case backwardRight:
+            digitalWrite(CAR_IN_1, HIGH);
+            digitalWrite(CAR_IN_2, LOW);
+            analogWrite(CAR_ENA, 700);
+            digitalWrite(CAR_IN_3, HIGH);
+            digitalWrite(CAR_IN_4, LOW);
+            analogWrite(CAR_ENB, carCurrentSpeed);
+
+            break;
+
+        case left:
+            digitalWrite(CAR_IN_1, LOW);
+            digitalWrite(CAR_IN_2, HIGH);
+            analogWrite(CAR_ENA, carCurrentSpeed);
+            digitalWrite(CAR_IN_3, LOW);
+            digitalWrite(CAR_IN_4, LOW);
+            analogWrite(CAR_ENB, carCurrentSpeed);
+            break;
+
+        case right:
+            digitalWrite(CAR_IN_1, LOW);
+            digitalWrite(CAR_IN_2, LOW);
+            analogWrite(CAR_ENA, carCurrentSpeed);
+            digitalWrite(CAR_IN_3, LOW);
+            digitalWrite(CAR_IN_4, HIGH);
+            analogWrite(CAR_ENB, carCurrentSpeed);
+
+            break;
+    }
 }
 
 void carAccelerateX2() {
+    carAccelerate(1.25);
+}
 
+
+void carBeginDecelerate() {
+    carIsDecelerating = true;
+}
+
+void carDecelerate(){
+    Serial.println("decelerate ...");
+
+    carCurrentSpeed -= 200;
+    analogWrite(CAR_ENA, carCurrentSpeed);
+    analogWrite(CAR_ENB, carCurrentSpeed);
+    if (carCurrentSpeed <= 500) {
+        Serial.println("decelerate brake...");
+
+        carIsDecelerating = false;
+        digitalWrite(CAR_IN_1, LOW);
+        digitalWrite(CAR_IN_2, LOW);
+        digitalWrite(CAR_IN_3, LOW);
+        digitalWrite(CAR_IN_4, LOW);
+    }
 }
 
 void carBrake() {
     Serial.println("brake...");
-
     digitalWrite(CAR_IN_1, LOW);
     digitalWrite(CAR_IN_2, LOW);
     digitalWrite(CAR_IN_3, LOW);
@@ -204,19 +321,21 @@ void mqttCallback(char *topic, byte *payload, unsigned int length) {
     } else if (strcmp(topic, CarRightTopic) == 0) {
         carGoRight();
     } else if (strcmp(topic, CarForwardLeftTopic) == 0) {
-
+        carGoForwardLeft();
     } else if (strcmp(topic, CarForwardRightTopic) == 0) {
-
+        carGoForwardRight();
     } else if (strcmp(topic, CarBackwardLeftTopic) == 0) {
-
+        carGoBackwardLeft();
     } else if (strcmp(topic, CarBackwardRightTopic) == 0) {
-
+        carGoBackwardRight();
     } else if (strcmp(topic, CarAccelerateTopic) == 0) {
-        carAccelerate();
+        carAccelerate(1.0);
     } else if (strcmp(topic, CarAccelerateX2Topic) == 0) {
         carAccelerateX2();
     } else if (strcmp(topic, CarBrakeTopic) == 0) {
         carBrake();
+    } else if (strcmp(topic, CarDecelerateTopic) == 0) {
+        carBeginDecelerate();
     }
 
 }
@@ -258,6 +377,7 @@ void connectMqtt() {
             mqttClient.subscribe("car/accelerate");
             mqttClient.subscribe("car/accelerateX2");
             mqttClient.subscribe("car/brake");
+            mqttClient.subscribe("car/decelerate");
         } else {
             Serial.print("failed, rc=");
             Serial.print(mqttClient.state());
@@ -365,6 +485,15 @@ void setup() {
 void loop() {
     unsigned long currentMillis = millis();
     mqttClient.loop();
+
+    if(currentMillis - carPreviousMillis >= 200) {
+        carPreviousMillis = currentMillis;
+        if (carIsDecelerating){
+            carDecelerate();
+        }
+    }
+
+
     if (currentState == sensor) {
         //温湿度
         if (currentMillis - DHTPreviousMillis >= DHTInterval) {

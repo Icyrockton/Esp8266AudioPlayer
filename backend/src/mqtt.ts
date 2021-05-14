@@ -32,6 +32,7 @@ export class MqttESPClient {
     static readonly CarAccelerateX2Topic = "car/accelerateX2"
     static readonly CarAccelerateTopic = "car/accelerate"
     static readonly CarBrakeTopic = "car/brake"
+    static readonly CarDecelerateTopic = "car/decelerate"
 
     private client: MqttClient
     private _mysql: Mysql;
@@ -163,6 +164,12 @@ export class MqttESPClient {
     carBrake() {
         console.log("刹车 ")
         this.client.publish(MqttESPClient.CarBrakeTopic, "@")
+
+    }
+
+    carDecelerate() {
+        console.log("减速 ")
+        this.client.publish(MqttESPClient.CarDecelerateTopic, "@")
 
     }
 }

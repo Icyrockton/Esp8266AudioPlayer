@@ -84,6 +84,8 @@ interface ESPApiService {
     @GET("car/brake")
     suspend fun carBrake(): Response<Unit>
 
+    @GET("car/decelerate")
+    suspend fun carDecelerate()  : Response<Unit>
 
 }
 
