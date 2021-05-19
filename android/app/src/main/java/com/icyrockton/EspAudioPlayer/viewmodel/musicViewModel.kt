@@ -9,8 +9,10 @@ import com.icyrockton.EspAudioPlayer.data.SearchSong
 import com.icyrockton.EspAudioPlayer.data.SongDetail
 import com.icyrockton.EspAudioPlayer.data.SongPlayInfo
 import com.icyrockton.EspAudioPlayer.network.ESPApiService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.java.KoinJavaComponent
 
 
@@ -103,6 +105,12 @@ class MusicViewModel : ViewModel() {
 
      fun clearData() {
         this._searchState.postValue(SearchState.loading)
+    }
+
+    suspend fun musicMode() = withContext(Dispatchers.IO) {
+        Log.e("compose", "musicMode", )
+
+        api.modeMusic()
     }
 
 

@@ -49,6 +49,7 @@ fun Sensor() {
 //    刷新数据
     LaunchedEffect(true) {
         sensorCoroutineScope.launch(Dispatchers.IO) {
+            sensorViewModel.sensorMode()
             while (true) {
                 sensorViewModel.refreshSensorData()
                 delay(5000L)
@@ -90,9 +91,9 @@ fun Sensor() {
         }
         TemperatureChart(
             modifier = Modifier.weight(0.5f),
-            temperatureList
+            temperatureList?.reversed() ?: emptyList()
         )
-        HumidityChart(modifier = Modifier.weight(0.5f),  humidityList)
+        HumidityChart(modifier = Modifier.weight(0.5f),  humidityList?.reversed() ?: emptyList())
         Spacer(modifier = Modifier.height(56.dp))
     }
 }

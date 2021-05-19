@@ -147,6 +147,13 @@ app.get("/car/brake",((req, res) => {
     res.send("ok")
 }))
 
+app.get("/mode/:mode",(req, res) => {
+    const mode = req.params.mode
+    mqttESPClient.modeChange(mode)
+    res.send("ok")
+
+})
+
 app.get("/car/:dir", ((req, res) => {
     var dirParams = req.params.dir
     var dir

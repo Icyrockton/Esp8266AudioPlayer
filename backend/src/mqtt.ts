@@ -33,6 +33,9 @@ export class MqttESPClient {
     static readonly CarAccelerateTopic = "car/accelerate"
     static readonly CarBrakeTopic = "car/brake"
     static readonly CarDecelerateTopic = "car/decelerate"
+    static readonly ModeCarTopic = "mode/car"
+    static readonly ModeMusicTopic = "mode/music"
+    static readonly ModeSensorTopic = "mode/sensor"
 
     private client: MqttClient
     private _mysql: Mysql;
@@ -46,6 +49,8 @@ export class MqttESPClient {
             this.client.subscribe(MqttESPClient.HumidityTopic)
         })
         this.client.on("message", ((topic, payload) => {
+            console.log(topic)
+            console.log(payload.toString())
             switch (topic) {
                 case MqttESPClient.TemperatureTopic :
                     console.log('插入温度')
@@ -171,6 +176,22 @@ export class MqttESPClient {
         console.log("减速 ")
         this.client.publish(MqttESPClient.CarDecelerateTopic, "@")
 
+    }
+
+    modeChange(mode: String) {
+        switch (mode) {
+            case "music":
+                this.client.publish(MqttESPClient.ModeMusicTopic, "@")
+                break
+            case "sensor":
+                this.client.publish(MqttESPClient.ModeSensorTopic, "@")
+                break
+            case "car":
+                this.client.publish(MqttESPClient.ModeCarTopic, "@")
+                break
+            default:
+                break
+        }
     }
 }
 

@@ -73,6 +73,7 @@ fun Music() {
     val coroutineScope  = rememberCoroutineScope()
     LaunchedEffect(true){
         coroutineScope.launch(Dispatchers.IO) {
+            musicViewModel.musicMode()
             musicViewModel.hotMusic()
         }
     }

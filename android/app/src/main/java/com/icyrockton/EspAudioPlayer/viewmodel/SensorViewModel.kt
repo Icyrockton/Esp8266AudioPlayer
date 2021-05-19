@@ -5,7 +5,9 @@ import androidx.lifecycle.*
 import com.icyrockton.EspAudioPlayer.data.HumidityItem
 import com.icyrockton.EspAudioPlayer.data.TemperatureItem
 import com.icyrockton.EspAudioPlayer.network.ESPApiService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.java.KoinJavaComponent.inject
 
 
@@ -22,9 +24,11 @@ class SensorViewModel : ViewModel() {
 
     //    最新的温度
     val newestTemperature =
-        _temperature.map { list: List<TemperatureItem>? -> list?.lastOrNull()?.temperature ?: 0.0 }
+            _temperature.map { list: List<TemperatureItem>? ->
+                list?.lastOrNull()?.temperature ?: 0.0
+            }
     val newestHumidity =
-        _humidity.map { list: List<HumidityItem>? -> list?.lastOrNull()?.humidity ?: 0.0 }
+            _humidity.map { list: List<HumidityItem>? -> list?.lastOrNull()?.humidity ?: 0.0 }
 
     private val _text = MutableLiveData<String>()
     val text: LiveData<String> = _text
@@ -48,5 +52,9 @@ class SensorViewModel : ViewModel() {
         _text.postValue("刷新完毕")
     }
 
+    suspend fun sensorMode() = withContext(Dispatchers.IO) {
+        Log.e("compose", "sensorMode", )
+        api.modeSensor()
+    }
 
 }

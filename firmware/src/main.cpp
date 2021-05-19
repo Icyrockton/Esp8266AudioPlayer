@@ -13,9 +13,12 @@
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
 #include "AudioFileSourceBuffer.h"
+#include "ESP8266WebServer.h"
 
 #define SSID  "2006_2.4G"
 #define PASSWORD  "22342234"
+#define ESP8266_SSID "ESP8266_CAR"
+#define ESP8266_PASSWORD "22342234"
 #define DHTPIN 0     // IO0 连接DHT11
 #define DHTTYPE DHT11   // DHT 11
 #define CAR_ENA 12
@@ -28,7 +31,15 @@
 IPAddress brokerIP(192, 168, 123, 179); //broker的地址
 WiFiClient wifiClient;
 
+enum ESPState {
+    sensor, musicPlayer, car
+};   //模式
+ESPState currentState = musicPlayer;
+
 PubSubClient mqttClient(wifiClient);
+//服务器
+//ESP8266WebServer server(80);
+
 DHT dht(DHTPIN, DHTTYPE);
 //MP3播放
 AudioFileSourceHTTPStream *mp3File;
@@ -37,10 +48,17 @@ AudioOutputI2S *out;
 AudioGeneratorMP3 *mp3;
 bool newMusic = false; //是否有新的音乐
 bool playingMusic = false; //播放音乐ing
+IPAddress local_IP(192,168,4,1);
+IPAddress gateway(192,168,4,1);
+IPAddress subnet(255,255,255,0);
 void connectWifi() {
-    Serial.print("Wifi Connecting to");
-    Serial.println(SSID);
+    Serial.print("Wifi STA Mode");
     WiFi.mode(WIFI_STA);
+
+
+    Serial.print("Wifi Connecting to ");
+    Serial.println(SSID);
+
     WiFi.begin(SSID, PASSWORD);
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
@@ -50,6 +68,12 @@ void connectWifi() {
     Serial.println("WiFi connected");
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
+
+//    Serial.println(WiFi.softAP(ESP8266_SSID, ESP8266_PASSWORD,WiFi.channel()) ? "Ready" : "Failed!");
+//
+//    Serial.print("AP IP address: ");
+//    Serial.println(WiFi.softAPIP());
+
 }
 
 const char *MusicPlayTopic = "music/play";
@@ -69,6 +93,9 @@ const char *CarAccelerateTopic = "car/accelerate";
 const char *CarAccelerateX2Topic = "car/accelerateX2";
 const char *CarBrakeTopic = "car/brake";
 const char *CarDecelerateTopic = "car/decelerate";
+const char *ModeCarTopic = "mode/car";
+const char *ModeMusicTopic = "mode/music";
+const char *ModeSensorTopic = "mode/sensor";
 DynamicJsonDocument jsonParseDocument(512);
 char musicUrl[256]; //音乐地址
 
@@ -162,7 +189,7 @@ void carGoBackwardRight() {
 }
 
 double carCurrentSpeed = 0;
-bool carIsDecelerating =  false;  //是否在减速
+bool carIsDecelerating = false;  //是否在减速
 unsigned long carPreviousMillis = 0;
 
 
@@ -253,7 +280,7 @@ void carBeginDecelerate() {
     carIsDecelerating = true;
 }
 
-void carDecelerate(){
+void carDecelerate() {
     Serial.println("decelerate ...");
 
     carCurrentSpeed -= 200;
@@ -286,56 +313,77 @@ void mqttCallback(char *topic, byte *payload, unsigned int length) {
         Serial.print((char) payload[i]);
     }
     Serial.println();
-    if (strcmp(topic, MusicPlayTopic) == 0) { //音乐播放
-        jsonParseDocument.clear();
-        deserializeJson(jsonParseDocument, payload);
-        strcpy(musicUrl, jsonParseDocument["songUrl"]);
-        newMusic = true;
-        playingMusic = true;
-        Serial.print("new music URL:");
-        Serial.println(musicUrl);
-        stopMusicPlay(); //停止播放音乐
-    } else if (strcmp(topic, MusicPauseTopic) == 0) { //音乐暂停
-        Serial.println("pause music:");
-        playingMusic = false;
-    } else if (strcmp(topic, MusicResumeTopic) == 0) { //音乐继续播放
-        Serial.println("resume music:");
-        playingMusic = true;
-    } else if (strcmp(topic, MusicCancelTopic) == 0) { //音乐取消
-        Serial.println("cancel music:");
-        stopMusicPlay();
-    } else if (strcmp(topic, MusicVolumeTopic) == 0) { //调整音量
-        jsonParseDocument.clear();
-        deserializeJson(jsonParseDocument, payload);
-        int volume = jsonParseDocument["volume"];
-        Serial.print("change volume : ");
-        Serial.println(volume);
-        out->SetGain((float) volume / 10);
-
-    } else if (strcmp(topic, CarForwardTopic) == 0) {
-        carGoForward();
-    } else if (strcmp(topic, CarBackwardTopic) == 0) {
-        carGoBackward();
-    } else if (strcmp(topic, CarLeftTopic) == 0) {
-        carGoLeft();
-    } else if (strcmp(topic, CarRightTopic) == 0) {
-        carGoRight();
-    } else if (strcmp(topic, CarForwardLeftTopic) == 0) {
-        carGoForwardLeft();
-    } else if (strcmp(topic, CarForwardRightTopic) == 0) {
-        carGoForwardRight();
-    } else if (strcmp(topic, CarBackwardLeftTopic) == 0) {
-        carGoBackwardLeft();
-    } else if (strcmp(topic, CarBackwardRightTopic) == 0) {
-        carGoBackwardRight();
-    } else if (strcmp(topic, CarAccelerateTopic) == 0) {
-        carAccelerate(1.0);
-    } else if (strcmp(topic, CarAccelerateX2Topic) == 0) {
-        carAccelerateX2();
-    } else if (strcmp(topic, CarBrakeTopic) == 0) {
+    if (strcmp(topic, ModeCarTopic) == 0) {
+        currentState = car;
+        Serial.println("car mode");
         carBrake();
-    } else if (strcmp(topic, CarDecelerateTopic) == 0) {
-        carBeginDecelerate();
+    } else if (strcmp(topic, ModeMusicTopic) == 0) {
+        currentState = musicPlayer;
+        Serial.println("music mode");
+        carBrake();
+    } else if (strcmp(topic, ModeSensorTopic) == 0) {
+        currentState = sensor;
+        Serial.println("sensor mode");
+        carBrake();
+    }
+
+    if (currentState == car) {
+        if (strcmp(topic, CarForwardTopic) == 0) {
+            carGoForward();
+        } else if (strcmp(topic, CarBackwardTopic) == 0) {
+            carGoBackward();
+        } else if (strcmp(topic, CarLeftTopic) == 0) {
+            carGoLeft();
+        } else if (strcmp(topic, CarRightTopic) == 0) {
+            carGoRight();
+        } else if (strcmp(topic, CarForwardLeftTopic) == 0) {
+            carGoForwardLeft();
+        } else if (strcmp(topic, CarForwardRightTopic) == 0) {
+            carGoForwardRight();
+        } else if (strcmp(topic, CarBackwardLeftTopic) == 0) {
+            carGoBackwardLeft();
+        } else if (strcmp(topic, CarBackwardRightTopic) == 0) {
+            carGoBackwardRight();
+        } else if (strcmp(topic, CarAccelerateTopic) == 0) {
+            carAccelerate(1.0);
+        } else if (strcmp(topic, CarAccelerateX2Topic) == 0) {
+            carAccelerateX2();
+        } else if (strcmp(topic, CarBrakeTopic) == 0) {
+            carBrake();
+        } else if (strcmp(topic, CarDecelerateTopic) == 0) {
+            carBeginDecelerate();
+        }
+    } else if (currentState == musicPlayer) {
+
+        if (strcmp(topic, MusicPlayTopic) == 0) { //音乐播放
+            jsonParseDocument.clear();
+            deserializeJson(jsonParseDocument, payload);
+            strcpy(musicUrl, jsonParseDocument["songUrl"]);
+            newMusic = true;
+            playingMusic = true;
+            Serial.print("new music URL:");
+            Serial.println(musicUrl);
+            stopMusicPlay(); //停止播放音乐
+        } else if (strcmp(topic, MusicPauseTopic) == 0) { //音乐暂停
+            Serial.println("pause music:");
+            playingMusic = false;
+        } else if (strcmp(topic, MusicResumeTopic) == 0) { //音乐继续播放
+            Serial.println("resume music:");
+            playingMusic = true;
+        } else if (strcmp(topic, MusicCancelTopic) == 0) { //音乐取消
+            Serial.println("cancel music:");
+            stopMusicPlay();
+        } else if (strcmp(topic, MusicVolumeTopic) == 0) { //调整音量
+            jsonParseDocument.clear();
+            deserializeJson(jsonParseDocument, payload);
+            int volume = jsonParseDocument["volume"];
+            Serial.print("change volume : ");
+            Serial.println(volume);
+            out->SetGain((float) volume / 10);
+
+        }
+    } else if (currentState == sensor) {
+
     }
 
 }
@@ -365,7 +413,7 @@ void connectMqtt() {
             mqttClient.subscribe("music/volume"); //调整音乐声音
             mqttClient.subscribe("music/cancel"); //音乐取消
             mqttClient.subscribe("music/resume"); //音乐继续播放
-
+//car
             mqttClient.subscribe("car/forward");
             mqttClient.subscribe("car/backward");
             mqttClient.subscribe("car/left");
@@ -378,6 +426,10 @@ void connectMqtt() {
             mqttClient.subscribe("car/accelerateX2");
             mqttClient.subscribe("car/brake");
             mqttClient.subscribe("car/decelerate");
+//            mode
+            mqttClient.subscribe("mode/music");
+            mqttClient.subscribe("mode/sensor");
+            mqttClient.subscribe("mode/car");
         } else {
             Serial.print("failed, rc=");
             Serial.print(mqttClient.state());
@@ -415,33 +467,32 @@ const char *URL = "http://m10.music.126.net/20210504163607/3a5d2a822419d170228cb
 
 void initAudioSetting() {
     audioLogger = &Serial; //日志
-    mp3File = new AudioFileSourceICYStream(URL);
-    mp3File->RegisterMetadataCB(MDCallback, (void *) "ICY");
-
-    buffer = new AudioFileSourceBuffer(mp3File, 1024 * 10);
-    buffer->RegisterStatusCB(StatusCallback, (void *) "buffer");
+//    mp3File = new AudioFileSourceICYStream(URL);
+//    mp3File->RegisterMetadataCB(MDCallback, (void *) "ICY");
+//
+//    buffer = new AudioFileSourceBuffer(mp3File, 1024 * 10);
+//    buffer->RegisterStatusCB(StatusCallback, (void *) "buffer");
 
     out = new AudioOutputI2S();
     out->SetPinout(15, 2, 3);
     out->SetGain(1.0f);
-    mp3 = new AudioGeneratorMP3();
-    mp3->begin(buffer, out);
+//    mp3 = new AudioGeneratorMP3();
+//    mp3->begin(buffer, out);
 }
 
 
-const long DHTInterval = 1000 * 10;  //温湿度采集间隔
+const long DHTInterval = 1000 * 4;  //温湿度采集间隔
 unsigned long DHTPreviousMillis = 0;        // will store last time LED was updated
 
 String jsonData;
 StaticJsonDocument<200> jsonDocument;
-enum ESPState {
-    sensor, musicPlayer
-};   //模式
-ESPState currentState = musicPlayer;
+static int lastms = 0;
 
 void mp3ChangeUrl() {  //更换URL
-    newMusic = false;
     stopMusicPlay();
+    newMusic = false;
+    lastms = 0;
+    playingMusic = true;
     Serial.printf_P(PSTR("Changing URL to: %s\n"), musicUrl);
     mp3File = new AudioFileSourceICYStream(musicUrl);
     mp3File->RegisterMetadataCB(MDCallback, (void *) "ICY");
@@ -454,7 +505,8 @@ void mp3ChangeUrl() {  //更换URL
 }
 
 void mp3Play() {
-    static int lastms = 0;
+
+
 
     if (playingMusic && mp3 && mp3->isRunning()) {
         if (millis() - lastms > 1000) {
@@ -469,11 +521,53 @@ void mp3Play() {
         }
     }
 }
+//String direction;
+//void WebCarHandle(){
+//    if (server.hasArg("direction")){  //方向
+//        if(currentState != car){
+//            currentState = car; //状态变为car
+//        }
+//        direction = server.arg("direction");
+//        if (direction.equals(CarForwardTopic)) {
+//            carGoForward();
+//        } else if (direction.equals(CarBackwardTopic)) {
+//            carGoBackward();
+//        } else if (direction.equals(CarLeftTopic) ) {
+//            carGoLeft();
+//        } else if (direction.equals( CarRightTopic)) {
+//            carGoRight();
+//        } else if (direction.equals(CarForwardLeftTopic) ) {
+//            carGoForwardLeft();
+//        } else if (direction.equals(CarForwardRightTopic) ) {
+//            carGoForwardRight();
+//        } else if (direction.equals(CarBackwardLeftTopic) ) {
+//            carGoBackwardLeft();
+//        } else if (direction.equals(CarBackwardRightTopic) ) {
+//            carGoBackwardRight();
+//        } else if (direction.equals( CarAccelerateTopic) ) {
+//            carAccelerate(1.0);
+//        } else if (direction.equals(CarAccelerateX2Topic) ) {
+//            carAccelerateX2();
+//        } else if (direction.equals(CarBrakeTopic) ) {
+//            carBrake();
+//        } else if (direction.equals(CarDecelerateTopic) ) {
+//            carBeginDecelerate();
+//        }
+//    }
+//    server.send ( 200, "text/html", "" );
+//    delay(1);
+//}
 
+//void setServer(){
+//    server.on("/",WebCarHandle);
+//    server.onNotFound ( WebCarHandle );
+//    server.begin();
+//}
 void setup() {
     Serial.begin(115200);
     connectWifi(); //连接WIFI
     connectMqtt();
+//    setServer();
     setCarPin();
     dht.begin();
     initAudioSetting();
@@ -485,15 +579,7 @@ void setup() {
 void loop() {
     unsigned long currentMillis = millis();
     mqttClient.loop();
-
-    if(currentMillis - carPreviousMillis >= 200) {
-        carPreviousMillis = currentMillis;
-        if (carIsDecelerating){
-            carDecelerate();
-        }
-    }
-
-
+//    server.handleClient();
     if (currentState == sensor) {
         //温湿度
         if (currentMillis - DHTPreviousMillis >= DHTInterval) {
@@ -504,6 +590,8 @@ void loop() {
                 Serial.println("humidity temperature read Nan");
                 return;
             }
+            jsonDocument.clear();
+            jsonData.clear();
             //发送温度
             jsonDocument["data"] = temperature;
             serializeJson(jsonDocument, jsonData);
@@ -522,9 +610,14 @@ void loop() {
         if (newMusic) {
             mp3ChangeUrl();
         }
-
         mp3Play(); //播放mp3 产生波
-
+    } else if (currentState == car) {
+        if (currentMillis - carPreviousMillis >= 200) {
+            carPreviousMillis = currentMillis;
+            if (carIsDecelerating) {
+                carDecelerate();
+            }
+        }
     }
 
 }
