@@ -116,7 +116,6 @@ class CarViewModel : ViewModel() {
 
     suspend fun carMode() = withContext(Dispatchers.IO) {
         Log.e("compose", "carMode", )
-
         api.modeCar()
     }
 }

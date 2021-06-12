@@ -120,7 +120,7 @@ void stopMusicPlay() { //停止音乐的播放
 
 //小车
 
-double CAR_NORMAL_SPEED = 800.0; //1~1024
+double CAR_NORMAL_SPEED = 500.0; //1~1024
 bool doubleAccelerate = false;
 enum CarDirection {
     forward,
@@ -212,13 +212,13 @@ void carAccelerate(double factor) {
             analogWrite(CAR_ENA, carCurrentSpeed);
             digitalWrite(CAR_IN_3, LOW);
             digitalWrite(CAR_IN_4, HIGH);
-            analogWrite(CAR_ENB, 700);
+            analogWrite(CAR_ENB, 200);
             break;
 
         case forwardRight:
             digitalWrite(CAR_IN_1, LOW);
             digitalWrite(CAR_IN_2, HIGH);
-            analogWrite(CAR_ENA, 700);
+            analogWrite(CAR_ENA, 200);
             digitalWrite(CAR_IN_3, LOW);
             digitalWrite(CAR_IN_4, HIGH);
             analogWrite(CAR_ENB, carCurrentSpeed);
@@ -238,12 +238,12 @@ void carAccelerate(double factor) {
             analogWrite(CAR_ENA, carCurrentSpeed);
             digitalWrite(CAR_IN_3, HIGH);
             digitalWrite(CAR_IN_4, LOW);
-            analogWrite(CAR_ENB, 700);
+            analogWrite(CAR_ENB, 200);
             break;
         case backwardRight:
             digitalWrite(CAR_IN_1, HIGH);
             digitalWrite(CAR_IN_2, LOW);
-            analogWrite(CAR_ENA, 700);
+            analogWrite(CAR_ENA, 200);
             digitalWrite(CAR_IN_3, HIGH);
             digitalWrite(CAR_IN_4, LOW);
             analogWrite(CAR_ENB, carCurrentSpeed);
@@ -506,8 +506,6 @@ void mp3ChangeUrl() {  //更换URL
 
 void mp3Play() {
 
-
-
     if (playingMusic && mp3 && mp3->isRunning()) {
         if (millis() - lastms > 1000) {
             lastms = millis();
@@ -517,7 +515,7 @@ void mp3Play() {
 
         if (!mp3->loop()) {
             mp3->stop();
-            stopMusicPlay(); //停止音乐播放   
+            stopMusicPlay(); //停止音乐播放
         }
     }
 }
@@ -621,3 +619,4 @@ void loop() {
     }
 
 }
+

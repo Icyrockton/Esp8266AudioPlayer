@@ -149,6 +149,7 @@ app.get("/car/brake",((req, res) => {
 
 app.get("/mode/:mode",(req, res) => {
     const mode = req.params.mode
+    console.log(mode)
     mqttESPClient.modeChange(mode)
     res.send("ok")
 

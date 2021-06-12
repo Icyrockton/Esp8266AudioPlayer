@@ -181,12 +181,15 @@ export class MqttESPClient {
     modeChange(mode: String) {
         switch (mode) {
             case "music":
+                console.log("音乐模式")
                 this.client.publish(MqttESPClient.ModeMusicTopic, "@")
                 break
             case "sensor":
+                console.log("传感器模式")
                 this.client.publish(MqttESPClient.ModeSensorTopic, "@")
                 break
             case "car":
+                console.log("小车模式")
                 this.client.publish(MqttESPClient.ModeCarTopic, "@")
                 break
             default:
